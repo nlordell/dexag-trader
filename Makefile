@@ -12,6 +12,6 @@ contracts/%.json: contracts/%.sol
 		-v "$(abspath contracts):/contracts" -w "/contracts" \
 		ethereum/solc:0.8.16 \
 		--overwrite --metadata-hash none --optimize --optimize-runs 1000000 \
-		--combined-json abi,bin-runtime $(notdir $<) \
-		| jq '.contracts["$(notdir $<):$(basename $(notdir $<))"]' \
-		> $@
+		--combined-json abi,bin-runtime --output-dir . $(notdir $<)
+	cat contracts/combined.json | jq '.contracts["$(notdir $<):$(basename $(notdir $<))"]' > $@
+	rm -f contracts/combined.json
