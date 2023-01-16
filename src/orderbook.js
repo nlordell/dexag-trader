@@ -26,7 +26,7 @@ export class Orderbook {
       Update orders 
       SET is_processed = 1 WHERE uid = ?
       `,
-      [`${order.uid}`]
+      [`${order.uid}`],
     );
   }
 
@@ -77,7 +77,7 @@ export class Orderbook {
           o.kind,
           0,
         ])
-        .flat()
+        .flat(),
     );
   }
 }

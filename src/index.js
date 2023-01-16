@@ -9,6 +9,7 @@ import {
   getPrice,
   setup_log,
 } from "./utils.js";
+import { ParameterStore } from "./parameterstore.js";
 import { generateExchangeConfig } from "./config.js";
 
 const POLL_INTERVAL = 5000; // ms
@@ -17,6 +18,7 @@ const db = new DB("orders.db");
 const provider = new ethers.providers.JsonRpcProvider(
   `https://mainnet.infura.io/v3/${Deno.env.get("INFURA_PROJECT_ID")}`,
 );
+const parameterStore = new ParameterStore(db);
 const orderbook = new Orderbook(db, true);
 await setup_log(log);
 const exchanges = generateExchangeConfig(db, provider).filter((exchange) =>
@@ -51,6 +53,14 @@ while (true) {
           ),
         );
       }
+      parameterStore.store(
+        order,
+        etherPrice,
+        sellTokenPrice,
+        buyTokenPrice,
+        gasPrice,
+        block_number,
+      );
       orderbook.mark_as_processed(order);
     }
   } catch (err) {

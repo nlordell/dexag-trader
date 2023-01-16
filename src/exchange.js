@@ -98,8 +98,8 @@ export class Exchange {
 
     const eth_call_result = await eth_call_promise;
 
-    const [executedSellAmount, executedBuyAmount] =
-      this.trader.decodeFunctionResult("trade", eth_call_result);
+    const [executedSellAmount, executedBuyAmount] = this.trader
+      .decodeFunctionResult("trade", eth_call_result);
 
     return {
       uid: order.uid,
@@ -131,7 +131,7 @@ export class Exchange {
         trade.data,
         feeUsd,
         outPutValueInDollar,
-      ]
+      ],
     );
   }
 
@@ -141,13 +141,13 @@ export class Exchange {
     block_number,
     etherPrice,
     buyTokenPrice,
-    sellTokenPrice
+    sellTokenPrice,
   ) {
     const swap = await this.trySwap(
       order,
       gasPrice,
       etherPrice,
-      sellTokenPrice
+      sellTokenPrice,
     );
     if (swap != null) {
       let feeUsd = swap.feeUsd;
@@ -155,7 +155,7 @@ export class Exchange {
         order,
         swap,
         block_number,
-        gasPrice
+        gasPrice,
       );
       let outPutValue = 0;
       if (this.name == "cowswap") {
