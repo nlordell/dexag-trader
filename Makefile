@@ -2,7 +2,7 @@
 run: contracts/Trader.json
 	deno run \
 		--allow-env=INFURA_PROJECT_ID \
-		--allow-net=api.cow.fi,mainnet.infura.io,api.1inch.io,api.0x.org,apiv5.paraswap.io \
+		--allow-net=api.cow.fi,mainnet.infura.io,api.1inch.io,api.0x.org,apiv5.paraswap.io,ethapi.openocean.finance \
 		--allow-read=orders.db,orders.db-journal \
 		--allow-write=orders.db,orders.db-journal \
 		src/index.js
