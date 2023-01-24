@@ -1,0 +1,16 @@
+.PHONY: run
+run: contracts/Trader.json
+	deno run \
+		--allow-env=INFURA_PROJECT_ID \
+		--allow-net=api.cow.fi,mainnet.infura.io,api.1inch.io,api.0x.org,apiv5.paraswap.io,ethapi.openocean.finance \
+		--allow-all \
+		src/index.js
+
+contracts/%.json: contracts/%.sol
+	docker run -it --rm \
+		-v "$(abspath contracts):/contracts" -w "/contracts" \
+		ethereum/solc:0.8.16 \
+		--overwrite --metadata-hash none --optimize --optimize-runs 1000000 \
+		--combined-json abi,bin-runtime --output-dir . $(notdir $<)
+	cat contracts/combined.json | jq '.contracts["$(notdir $<):$(basename $(notdir $<))"]' > $@
+	rm -f contracts/combined.json

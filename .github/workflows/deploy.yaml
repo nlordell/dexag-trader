@@ -1,0 +1,68 @@
+name: deploy
+on:
+  push:
+    branches: [main]
+    tags: [v*]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: data-collector image metadata
+        id: meta_data_collector
+        uses: docker/metadata-action@v3
+        with:
+          images: ghcr.io/${{ github.repository }}-data-collector
+          labels: |
+            org.opencontainers.image.licenses=GPL-3.0-or-later
+      - name: data-collector image build
+        uses: docker/build-push-action@v2
+        with:
+          context: ./data-collector/
+          file: Dockerfile
+          push: true
+          tags: ${{ steps.meta_services.outputs.tags }}
+          labels: ${{ steps.meta_services.outputs.labels }}
+
+      - name: evaluation_dashboard image metadata
+        id: meta_evaluation_dashboard
+        uses: docker/metadata-action@v3
+        with:
+          images: ghcr.io/${{ github.repository }}-dashboard
+          labels: |
+            org.opencontainers.image.licenses=GPL-3.0-or-later
+      - name: Services image build
+        uses: docker/build-push-action@v2
+        with:
+          context: ./evaluation_dashboard/
+          file: Dockerfile
+          push: true
+          tags: ${{ steps.meta_services.outputs.tags }}
+          labels: ${{ steps.meta_services.outputs.labels }}
+
+      - name: Migration image metadata
+        id: meta_migration
+        uses: docker/metadata-action@v3
+        with:
+          images: ghcr.io/${{ github.repository }}-migration
+          labels: |
+            org.opencontainers.image.licenses=GPL-3.0-or-later
+      - name: Migration image build
+        uses: docker/build-push-action@v2
+        with:
+          context: ./pg-database
+          file: Dockerfile.migration
+          push: true
+          tags: ${{ steps.meta_migration.outputs.tags }}
+          labels: ${{ steps.meta_migration.outputs.labels }}
