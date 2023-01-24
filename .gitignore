@@ -1,1 +1,4 @@
-orders.db
+evalution_dashboards/app/src/__pycache__/*
+evalution_dashboards/app/__pycache__/*
+.env
+.DS_Store
