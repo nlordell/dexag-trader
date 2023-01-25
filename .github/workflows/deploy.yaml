@@ -32,8 +32,8 @@ jobs:
           context: ./data-collector/
           file: Dockerfile
           push: true
-          tags: ${{ steps.meta_services.outputs.tags }}
-          labels: ${{ steps.meta_services.outputs.labels }}
+          tags: ${{ steps.meta_data_collector.outputs.tags }}
+          labels: ${{ steps.meta_data_collector.outputs.labels }}
 
       - name: evaluation_dashboard image metadata
         id: meta_evaluation_dashboard
@@ -48,8 +48,8 @@ jobs:
           context: ./evaluation_dashboard/
           file: Dockerfile
           push: true
-          tags: ${{ steps.meta_services.outputs.tags }}
-          labels: ${{ steps.meta_services.outputs.labels }}
+          tags: ${{ steps.meta_evaluation_dashboard.outputs.tags }}
+          labels: ${{ steps.meta_evaluation_dashboard.outputs.labels }}
 
       - name: Migration image metadata
         id: meta_migration
