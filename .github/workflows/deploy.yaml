@@ -30,7 +30,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: ./data-collector/
-          file: Dockerfile
+          file: ./data-collector/Dockerfile
           push: true
           tags: ${{ steps.meta_data_collector.outputs.tags }}
           labels: ${{ steps.meta_data_collector.outputs.labels }}
@@ -45,8 +45,8 @@ jobs:
       - name: Services image build
         uses: docker/build-push-action@v2
         with:
-          context: ./evaluation_dashboard/
-          file: Dockerfile
+          context: ./evaluation_dashboards/
+          file: ./evaluation_dashboards/Dockerfile
           push: true
           tags: ${{ steps.meta_evaluation_dashboard.outputs.tags }}
           labels: ${{ steps.meta_evaluation_dashboard.outputs.labels }}
@@ -61,8 +61,8 @@ jobs:
       - name: Migration image build
         uses: docker/build-push-action@v2
         with:
-          context: ./pg-database
-          file: Dockerfile.migration
+          context: ./pg-database/
+          file: ./pg-database/Dockerfile.migration
           push: true
           tags: ${{ steps.meta_migration.outputs.tags }}
           labels: ${{ steps.meta_migration.outputs.labels }}
