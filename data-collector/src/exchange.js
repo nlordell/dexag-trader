@@ -14,22 +14,6 @@ export class Exchange {
       freshStart: true,
       ...options,
     };
-    if (this.options.freshStart) {
-      db.query(`drop table if exists ${this.name}`);
-    }
-    this.db.query(`
-      CREATE TABLE IF NOT EXISTS ${this.name} (
-        uid TEXT PRIMARY KEY,
-        sell_amount TEXT,
-        buy_amount TEXT,
-        executed_sell_amount TEXT,
-        executed_buy_amount TEXT,
-        exchange TEXT,
-        data TEXT,
-        output_value_usd TEXT,
-        gas_cost_usd TEXT
-      )
-    `);
   }
 
   async trySwap(order, gasPrice, ethPrice, sellTokenPrice) {
@@ -113,13 +97,15 @@ export class Exchange {
     };
   }
 
-  storeTrade(trade, outPutValueInDollar, feeUsd) {
-    this.db.query(
+  async storeTrade(trade, outPutValueInDollar, feeUsd) {
+    const client = await this.db.connect();
+    await client.queryArray(
       `
-        INSERT OR IGNORE INTO ${this.name}
+        INSERT INTO ${this.name}
           (uid, sell_amount, buy_amount, executed_sell_amount, executed_buy_amount, exchange, data, gas_cost_usd, output_value_usd)
         VALUES
-          (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        ON CONFLICT (uid) DO NOTHING
       `,
       [
         trade.uid,
@@ -133,6 +119,7 @@ export class Exchange {
         outPutValueInDollar,
       ],
     );
+    client.release();
   }
 
   async processOrder(
@@ -163,8 +150,8 @@ export class Exchange {
       } else {
         outPutValue = trade.executedBuyAmount / buyTokenPrice - feeUsd;
       }
-      this.storeTrade(trade, outPutValue, feeUsd);
-
+     await this.storeTrade(trade, outPutValue, feeUsd);
+  
       log.debug(`${this.name} processed ${order.uid}`);
     }
   }

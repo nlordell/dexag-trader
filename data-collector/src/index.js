@@ -1,6 +1,6 @@
 import { delay } from "https://deno.land/std@0.153.0/async/delay.ts";
 import * as log from "https://deno.land/std@0.153.0/log/mod.ts";
-import { DB } from "https://deno.land/x/sqlite@v3.4.1/mod.ts";
+import { Pool } from "https://deno.land/x/postgres@v0.17.0/mod.ts";
 import { ethers } from "https://cdn.ethers.io/lib/ethers-5.6.esm.min.js";
 import { Orderbook } from "./orderbook.js";
 import {
@@ -14,14 +14,25 @@ import { generateExchangeConfig } from "./config.js";
 
 const POLL_INTERVAL = 5000; // ms
 
-const db = new DB("orders.db");
-const provider = new ethers.providers.JsonRpcProvider(
-  `https://mainnet.infura.io/v3/${Deno.env.get("INFURA_PROJECT_ID")}`,
+const POOL_CONNECTIONS = 20;
+const dbPool = new Pool(
+  {
+    database: Deno.env.get("POSTGRES_DB"),
+    hostname: Deno.env.get("DATABASE_HOST"),
+    password: Deno.env.get("POSTGRES_PASSWORD"),
+    port: Deno.env.get("POSTGRES_PORT"),
+    user: Deno.env.get("POSTGRES_USER"),
+  },
+  POOL_CONNECTIONS
 );
-const parameterStore = new ParameterStore(db);
-const orderbook = new Orderbook(db, true);
+
+const provider = new ethers.providers.JsonRpcProvider(
+  `https://mainnet.infura.io/v3/${Deno.env.get("INFURA_PROJECT_ID")}`
+);
+const parameterStore = new ParameterStore(dbPool);
+const orderbook = new Orderbook(dbPool, true);
 await setup_log(log);
-const exchanges = generateExchangeConfig(db, provider).filter((exchange) =>
+const exchanges = generateExchangeConfig(dbPool, provider).filter((exchange) =>
   ["zeroex", "ocean", "oneinch", "paraswap", "cowswap"].includes(exchange.name)
 );
 while (true) {
@@ -30,15 +41,17 @@ while (true) {
     log.debug("starting run for one order");
     const block_number = await getLatestBlockNumber(provider);
     const gasPrice = await getGasPrice();
-    const order = orderbook.unprocessedOrders().pop();
+    const order = (await orderbook.unprocessedOrders()).pop();
     if (order != undefined) {
       const etherPrice = await getPrice(
-        "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+        "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
       );
       const buyTokenPrice = await getPrice(order.buyToken);
       const sellTokenPrice = await getPrice(order.sellToken);
       if (
-        buyTokenPrice != null && sellTokenPrice != null && etherPrice != null
+        buyTokenPrice != null &&
+        sellTokenPrice != null &&
+        etherPrice != null
       ) {
         await Promise.all(
           exchanges.map((exchange) =>
@@ -48,20 +61,20 @@ while (true) {
               block_number,
               etherPrice,
               buyTokenPrice,
-              sellTokenPrice,
+              sellTokenPrice
             )
-          ),
+          )
         );
       }
-      parameterStore.store(
+      await parameterStore.store(
         order,
         etherPrice,
         sellTokenPrice,
         buyTokenPrice,
         gasPrice,
-        block_number,
+        block_number
       );
-      orderbook.mark_as_processed(order);
+      await orderbook.mark_as_processed(order);
     }
   } catch (err) {
     log.error(`${err}`);

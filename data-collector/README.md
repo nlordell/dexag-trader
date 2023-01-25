@@ -11,20 +11,27 @@ Simulation is done with an `eth_call` with state overrides. This allows
 simulations to work even for traders that haven't approved the required
 contracts.
 
-## Output
-
-The daemon writes to an SQLite database `orders.db`. It includes details of the
-original CoW Protocol order and trade simulation results for each DEX
-aggregator.
 
 ## How to run it:
 
 1. install deno
 
+2. copy .env.example to .env and fill out the variables
+```
+source ../.env
+```
 2. run:
 
 ```
-export INFURA_PROJECT_ID=<key>
+source .env
 make run
 ```
+
+## How to run it in docker:
+
+```
+docker build --tag benchmark-tool -f ./Dockerfile .
+docker run -ti --env-file ../.env benchmark-tool 
+```
+
 

@@ -1,0 +1,5 @@
+dash
+plotly
+pandas
+gunicorn
+psycopg2
