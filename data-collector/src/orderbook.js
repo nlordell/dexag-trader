@@ -12,7 +12,7 @@ export class Orderbook {
         Update orders 
         SET is_processed = true WHERE uid = $1
         `,
-      [order.uid]
+      [order.uid],
     );
     client.release();
   }
@@ -25,7 +25,7 @@ export class Orderbook {
       FROM orders AS o
       WHERE is_processed = false
       `,
-      []
+      [],
     );
     client.release();
 
@@ -71,7 +71,7 @@ export class Orderbook {
           order.buyAmount,
           order.kind,
           false,
-        ]
+        ],
       );
     }
     client.release();

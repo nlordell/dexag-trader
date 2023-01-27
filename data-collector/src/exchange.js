@@ -1,6 +1,8 @@
 import * as log from "https://deno.land/std@0.153.0/log/mod.ts";
 import { ethers } from "https://cdn.ethers.io/lib/ethers-5.6.esm.min.js";
 import Trader from "../contracts/Trader.json" assert { type: "json" };
+import { calculate_output_via_eth_call } from "./simulate_eth_call.js";
+import { calculate_output_via_trace_callMany } from "./simulate_trace_callMany.js";
 
 export class Exchange {
   constructor(name, db, provider, swap, options = {}) {
@@ -25,7 +27,7 @@ export class Exchange {
     }
   }
 
-  async simulateTrade(order, swap, block_number, gasPrice) {
+  async simulateTrade(order, swap, block_number, gasPrice, ethPrice) {
     if (!swap) {
       return {
         uid: order.uid,
@@ -50,40 +52,41 @@ export class Exchange {
         gasCost: swap.feeUsd,
       };
     }
+    const trace_provider = new ethers.providers.JsonRpcProvider(
+      `https://eth-mainnet.gateway.pokt.network/v1/lb/${Deno.env.get(
+        "POKT_KEY"
+      )}`
+    );
+    const estimation_result = await calculate_output_via_trace_callMany(
+      trace_provider,
+      order,
+      swap,
+      block_number
+    );
 
-    const eth_call_promise = this.provider
-      .send("eth_call", [
-        {
-          from: order.owner,
-          to: order.owner,
-          data: this.trader.encodeFunctionData("trade", [
-            order.sellToken,
-            order.buyToken,
-            swap.spender,
-            swap.exchange,
-            swap.data,
-          ]),
-        },
-        block_number,
-        {
-          [order.owner]: {
-            code: `0x${Trader["bin-runtime"]}`,
-          },
-        },
-      ])
-      .catch((err) => {
-        if (`${err.body}`.indexOf("execution reverted") >= 0) {
-          log.warning(`${this.name} trade reverted`);
-          return this.trader.encodeFunctionResult("trade", [0, 0]);
-        } else {
-          throw err;
-        }
-      });
-
-    const eth_call_result = await eth_call_promise;
-
-    const [executedSellAmount, executedBuyAmount] = this.trader
-      .decodeFunctionResult("trade", eth_call_result);
+    const [executedSellAmount, executedBuyAmount, gasUsed] =
+      await calculate_output_via_eth_call(
+        this.name,
+        this.trader,
+        this.provider,
+        order,
+        swap,
+        block_number
+      );
+    const gasCost = gasUsed == null ? null : (gasUsed * gasPrice) / ethPrice;
+    const gasCostTraceCall =
+      estimation_result == null
+        ? null
+        : (parseInt(estimation_result.gas, 10) * gasPrice) / ethPrice;
+    log.debug(
+      "gas costs from trader contract for tx on " + this.name + ": " + gasCost
+    );
+    log.debug(
+      "gas costs from trace_call simulation on " +
+        this.name +
+        ": " +
+        gasCostTraceCall
+    );
 
     return {
       uid: order.uid,
@@ -93,7 +96,9 @@ export class Exchange {
       executedBuyAmount,
       exchange: swap.exchange,
       data: swap.data,
-      gasCost: swap.feeUsd,
+      gasCost,
+      gasCostTraceCall,
+      is_reverted: gasUsed == 0 ? true : false,
     };
   }
 
@@ -117,7 +122,7 @@ export class Exchange {
         trade.data,
         feeUsd,
         outPutValueInDollar,
-      ],
+      ]
     );
     client.release();
   }
@@ -128,21 +133,22 @@ export class Exchange {
     block_number,
     etherPrice,
     buyTokenPrice,
-    sellTokenPrice,
+    sellTokenPrice
   ) {
     const swap = await this.trySwap(
       order,
       gasPrice,
       etherPrice,
-      sellTokenPrice,
+      sellTokenPrice
     );
     if (swap != null) {
-      let feeUsd = swap.feeUsd;
+      const feeUsd = swap.feeUsd;
       const trade = await this.simulateTrade(
         order,
         swap,
         block_number,
         gasPrice,
+        etherPrice
       );
       let outPutValue = 0;
       if (this.name == "cowswap") {
@@ -150,8 +156,7 @@ export class Exchange {
       } else {
         outPutValue = trade.executedBuyAmount / buyTokenPrice - feeUsd;
       }
-     await this.storeTrade(trade, outPutValue, feeUsd);
-  
+      await this.storeTrade(trade, outPutValue, feeUsd);
       log.debug(`${this.name} processed ${order.uid}`);
     }
   }

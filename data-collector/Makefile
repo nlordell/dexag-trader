@@ -1,7 +1,6 @@
 .PHONY: run
 run: contracts/Trader.json
 	deno run \
-		--allow-env=INFURA_PROJECT_ID \
 		--allow-net=api.cow.fi,mainnet.infura.io,api.1inch.io,api.0x.org,apiv5.paraswap.io,ethapi.openocean.finance \
 		--allow-all \
 		src/index.js

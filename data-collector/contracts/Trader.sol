@@ -15,14 +15,16 @@ contract Trader {
         address spender,
         address exchange,
         bytes calldata cdata
-    ) external returns (uint256 executedIn, uint256 executedOut) {
+    ) external returns (uint256 executedIn, uint256 executedOut, uint256 gasUsed) {
         uint256 balanceIn = tokenIn.balanceOf(address(this));
         uint256 balanceOut = tokenOut.balanceOf(address(this));
 
         if (spender != address(0)) {
             tokenIn.safeApprove(spender, type(uint256).max);
         }
+        gasUsed = gasleft();
         exchange.doCall(cdata);
+        gasUsed -= gasleft();
 
         executedIn = balanceIn - tokenIn.balanceOf(address(this));
         executedOut = tokenOut.balanceOf(address(this)) - balanceOut;

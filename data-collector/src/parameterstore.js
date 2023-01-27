@@ -25,7 +25,7 @@ export class ParameterStore {
         sellTokenPrice,
         buyTokenPrice,
         ethPrice,
-        parseInt(blockNumber,16),
+        parseInt(blockNumber, 16),
       ],
     );
     client.release();

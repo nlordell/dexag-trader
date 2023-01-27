@@ -23,11 +23,11 @@ const dbPool = new Pool(
     port: Deno.env.get("POSTGRES_PORT"),
     user: Deno.env.get("POSTGRES_USER"),
   },
-  POOL_CONNECTIONS
+  POOL_CONNECTIONS,
 );
 
 const provider = new ethers.providers.JsonRpcProvider(
-  `https://mainnet.infura.io/v3/${Deno.env.get("INFURA_PROJECT_ID")}`
+  `https://mainnet.infura.io/v3/${Deno.env.get("INFURA_PROJECT_ID")}`,
 );
 const parameterStore = new ParameterStore(dbPool);
 const orderbook = new Orderbook(dbPool, true);
@@ -44,7 +44,7 @@ while (true) {
     const order = (await orderbook.unprocessedOrders()).pop();
     if (order != undefined) {
       const etherPrice = await getPrice(
-        "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+        "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
       );
       const buyTokenPrice = await getPrice(order.buyToken);
       const sellTokenPrice = await getPrice(order.sellToken);
@@ -61,9 +61,9 @@ while (true) {
               block_number,
               etherPrice,
               buyTokenPrice,
-              sellTokenPrice
+              sellTokenPrice,
             )
-          )
+          ),
         );
       }
       await parameterStore.store(
@@ -72,7 +72,7 @@ while (true) {
         sellTokenPrice,
         buyTokenPrice,
         gasPrice,
-        block_number
+        block_number,
       );
       await orderbook.mark_as_processed(order);
     }

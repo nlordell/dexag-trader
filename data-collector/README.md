@@ -11,19 +11,19 @@ Simulation is done with an `eth_call` with state overrides. This allows
 simulations to work even for traders that haven't approved the required
 contracts.
 
-
 ## How to run it:
 
 1. install deno
 
 2. copy .env.example to .env and fill out the variables
 ```
-source ../.env
+cd data-collector
+export $(grep -v '^#' ../.env | xargs)
 ```
+
 2. run:
 
 ```
-source .env
 make run
 ```
 
@@ -31,7 +31,5 @@ make run
 
 ```
 docker build --tag benchmark-tool -f ./Dockerfile .
-docker run -ti --env-file ../.env benchmark-tool 
+docker run -ti --env-file ../.env benchmark-tool
 ```
-
-
