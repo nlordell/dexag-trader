@@ -53,15 +53,17 @@ export class Exchange {
       };
     }
     const trace_provider = new ethers.providers.JsonRpcProvider(
-      `https://eth-mainnet.gateway.pokt.network/v1/lb/${Deno.env.get(
-        "POKT_KEY"
-      )}`
+      `https://eth-mainnet.gateway.pokt.network/v1/lb/${
+        Deno.env.get(
+          "POKT_KEY",
+        )
+      }`,
     );
     const estimation_result = await calculate_output_via_trace_callMany(
       trace_provider,
       order,
       swap,
-      block_number
+      block_number,
     );
 
     const [executedSellAmount, executedBuyAmount, gasUsed] =
@@ -71,21 +73,20 @@ export class Exchange {
         this.provider,
         order,
         swap,
-        block_number
+        block_number,
       );
     const gasCost = gasUsed == null ? null : (gasUsed * gasPrice) / ethPrice;
-    const gasCostTraceCall =
-      estimation_result == null
-        ? null
-        : (parseInt(estimation_result.gas, 10) * gasPrice) / ethPrice;
+    const gasCostTraceCall = estimation_result == null
+      ? null
+      : (parseInt(estimation_result.gas, 10) * gasPrice) / ethPrice;
     log.debug(
-      "gas costs from trader contract for tx on " + this.name + ": " + gasCost
+      "gas costs from trader contract for tx on " + this.name + ": " + gasCost,
     );
     log.debug(
       "gas costs from trace_call simulation on " +
         this.name +
         ": " +
-        gasCostTraceCall
+        gasCostTraceCall,
     );
 
     return {
@@ -122,7 +123,7 @@ export class Exchange {
         trade.data,
         feeUsd,
         outPutValueInDollar,
-      ]
+      ],
     );
     client.release();
   }
@@ -133,13 +134,13 @@ export class Exchange {
     block_number,
     etherPrice,
     buyTokenPrice,
-    sellTokenPrice
+    sellTokenPrice,
   ) {
     const swap = await this.trySwap(
       order,
       gasPrice,
       etherPrice,
-      sellTokenPrice
+      sellTokenPrice,
     );
     if (swap != null) {
       const feeUsd = swap.feeUsd;
@@ -148,7 +149,7 @@ export class Exchange {
         swap,
         block_number,
         gasPrice,
-        etherPrice
+        etherPrice,
       );
       let outPutValue = 0;
       if (this.name == "cowswap") {

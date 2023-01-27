@@ -16,6 +16,7 @@ contracts.
 1. install deno
 
 2. copy .env.example to .env and fill out the variables
+
 ```
 cd data-collector
 export $(grep -v '^#' ../.env | xargs)

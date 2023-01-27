@@ -1,7 +1,7 @@
 import { ethers } from "https://cdn.ethers.io/lib/ethers-5.6.esm.min.js";
 
 export class Orderbook {
-  constructor(db, freshStart) {
+  constructor(db) {
     this.db = db;
   }
 

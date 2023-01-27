@@ -73,7 +73,6 @@ export function generateExchangeConfig(db, provider) {
         buyAmount: ethers.BigNumber.from(swap.toTokenAmount),
       };
     }),
-
     new Exchange("zeroex", db, provider, async (order, gasPrice, ethPrice) => {
       // based on the following calls from defi lama and adding the gas price
       // https://api.0x.org/swap/v1/quote?buyToken=0x6b175474e89094c44da98b954eedeac495271d0f&sellToken=0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2&sellAmount=10000000000000000000&slippagePercentage=0.005&affiliateAddress=0x08a3c2A819E3de7ACa384c798269B3Ce1CD0e437&enableSlippageProtection=false
@@ -102,7 +101,6 @@ export function generateExchangeConfig(db, provider) {
         buyAmount: ethers.BigNumber.from(quote.buyAmount),
       };
     }),
-
     new Exchange(
       "paraswap",
       db,
@@ -164,7 +162,7 @@ export function generateExchangeConfig(db, provider) {
       "cowswap",
       db,
       provider,
-      async (order, _gasPrice, ethPrice, sellTokenPrice) => {
+      async (order, _gasPrice, _ethPrice, sellTokenPrice) => {
         const data = {
           method: "POST",
           headers: {

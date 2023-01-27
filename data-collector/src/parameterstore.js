@@ -1,5 +1,5 @@
 export class ParameterStore {
-  constructor(db, freshStart) {
+  constructor(db) {
     this.db = db;
   }
 
