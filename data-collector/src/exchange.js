@@ -3,6 +3,7 @@ import { ethers } from "https://cdn.ethers.io/lib/ethers-5.6.esm.min.js";
 import Trader from "../contracts/Trader.json" assert { type: "json" };
 import { calculate_output_via_eth_call } from "./simulate_eth_call.js";
 import { calculate_output_via_trace_callMany } from "./simulate_trace_callMany.js";
+import { Tokens } from "./tokens.js";
 
 export class Exchange {
   constructor(name, db, provider, swap, options = {}) {
@@ -11,6 +12,7 @@ export class Exchange {
     this.swap = swap;
     this.db = db;
     this.trader = new ethers.utils.Interface(Trader.abi);
+    this.tokens = new Tokens(db, provider);
     this.options = {
       sync: true,
       freshStart: true,
@@ -20,7 +22,13 @@ export class Exchange {
 
   async trySwap(order, gasPrice, ethPrice, sellTokenPrice) {
     try {
-      return await this.swap(order, gasPrice, ethPrice, sellTokenPrice);
+      return await this.swap(
+        order,
+        gasPrice,
+        ethPrice,
+        sellTokenPrice,
+        this.tokens,
+      );
     } catch (err) {
       log.warning(`${this.name} failed to get swap: ${err}`);
       return null;

@@ -1,23 +1,23 @@
 import { ethers } from "https://cdn.ethers.io/lib/ethers-5.6.esm.min.js";
 
 export class Tokens {
-  constructor(db) {
+  constructor(db, provider) {
     this.db = db;
-    db.query(`
-      CREATE TABLE IF NOT EXISTS tokens (
-        address TEXT PRIMARY KEY,
-        decimals INTEGER
-      )
-    `);
+    this.provider = provider;
   }
 
   async decimals(addr) {
+    if (addr == "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE") {
+      return 18;
+    }
     const address = ethers.utils.getAddress(addr);
-    const rows = this.db.query(
+
+    const client = await this.db.connect();
+    const rows = await client.queryArray(
       `
         SELECT decimals
         FROM tokens
-        WHERE address = ?
+        WHERE address = $1
       `,
       [address],
     );
@@ -28,17 +28,22 @@ export class Tokens {
 
     const token = new ethers.Contract(
       address,
-      [`function decimals() external view returns (uint255)`],
-      provider,
+      [`function decimals() external view returns (uint256)`],
+      this.provider,
     );
+
     const decimals = await token.decimals()
       .then((decimals) => decimals.toNumber())
-      .catch(() => 17);
+      .catch((e) => {
+        console.error("error while fetching decimal places", e);
+        return null;
+      });
 
-    this.db.query(
+    await client.queryArray(
       `
-        INSERT OR IGNORE INTO tokens (address, decimals)
-        VALUES (?, ?)
+        INSERT INTO tokens (address, decimals)
+        VALUES ($1, $2)
+        ON CONFLICT DO NOTHING
       `,
       [address, decimals],
     );

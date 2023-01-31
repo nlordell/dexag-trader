@@ -1,8 +1,6 @@
 import { ethers } from "https://cdn.ethers.io/lib/ethers-5.6.esm.min.js";
 import { Exchange } from "./exchange.js";
-import { Tokens } from "./tokens.js";
 import { handleJson } from "./utils.js";
-import { DB } from "https://deno.land/x/sqlite@v3.4.1/mod.ts";
 
 export function generateExchangeConfig(db, provider) {
   return [
@@ -105,9 +103,7 @@ export function generateExchangeConfig(db, provider) {
       "paraswap",
       db,
       provider,
-      async (order, gasPrice, ethPrice) => {
-        const db = new DB("orders.db");
-        const tokens = new Tokens(db);
+      async (order, gasPrice, ethPrice, _sellTokenPrice, tokens) => {
         const params = [
           `srcToken=${order.sellToken}`,
           `srcDecimals=${await tokens.decimals(order.sellToken)}`,
