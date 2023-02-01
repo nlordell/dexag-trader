@@ -7,7 +7,7 @@ from src.cowswap_vs_best_solution import get_diff_between_winner_and_cowswap_gra
 debug = False if os.environ["DASH_DEBUG_MODE"] == "False" else True
 #establishing the connection
 conn = psycopg2.connect(
-   database=os.environ["POSTGRES_DB"], user=os.environ["POSTGRES_USER"], password=os.environ["POSTGRES_PASSWORD"], host=os.environ["DATABASE_HOST"], port=os.environ["POSTGRES_PORT"]
+   database=os.environ["POSTGRES_DB"], user=os.environ["POSTGRES_USER"], password=os.environ["POSTGRES_PASSWORD"], host=os.environ["POSTGRES_HOST"], port=os.environ["POSTGRES_PORT"]
    )
 #Setting auto commit false
 conn.autocommit = True
