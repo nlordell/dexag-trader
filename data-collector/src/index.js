@@ -18,7 +18,7 @@ const POOL_CONNECTIONS = 20;
 const dbPool = new Pool(
   {
     database: Deno.env.get("POSTGRES_DB"),
-    hostname: Deno.env.get("DATABASE_HOST"),
+    hostname: Deno.env.get("POSTGRES_HOST"),
     password: Deno.env.get("POSTGRES_PASSWORD"),
     port: Deno.env.get("POSTGRES_PORT"),
     user: Deno.env.get("POSTGRES_USER"),
