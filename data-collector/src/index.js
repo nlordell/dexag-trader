@@ -11,6 +11,7 @@ import {
 } from "./utils.js";
 import { ParameterStore } from "./parameterstore.js";
 import { generateExchangeConfig } from "./config.js";
+import { deadline } from "https://deno.land/std/async/mod.ts";
 
 const POLL_INTERVAL = 5000; // ms
 
@@ -35,47 +36,50 @@ await setup_log(log);
 const exchanges = generateExchangeConfig(dbPool, provider).filter((exchange) =>
   ["zeroex", "ocean", "oneinch", "paraswap", "cowswap"].includes(exchange.name)
 );
+async function run_loop() {
+  await orderbook.new_orders_update();
+  log.debug("starting run for one order");
+  const block_number = await getLatestBlockNumber(provider);
+  const gasPrice = await getGasPrice();
+  const order = (await orderbook.unprocessedOrders()).pop();
+  if (order != undefined) {
+    const etherPrice = await getPrice(
+      "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    );
+    const buyTokenPrice = await getPrice(order.buyToken);
+    const sellTokenPrice = await getPrice(order.sellToken);
+    if (
+      buyTokenPrice != null &&
+      sellTokenPrice != null &&
+      etherPrice != null
+    ) {
+      await Promise.all(
+        exchanges.map((exchange) =>
+          exchange.processOrder(
+            order,
+            gasPrice,
+            block_number,
+            etherPrice,
+            buyTokenPrice,
+            sellTokenPrice,
+          )
+        ),
+      );
+    }
+    await parameterStore.store(
+      order,
+      etherPrice,
+      sellTokenPrice,
+      buyTokenPrice,
+      gasPrice,
+      block_number,
+    );
+    await orderbook.mark_as_processed(order);
+  }
+}
 while (true) {
   try {
-    await orderbook.new_orders_update();
-    log.debug("starting run for one order");
-    const block_number = await getLatestBlockNumber(provider);
-    const gasPrice = await getGasPrice();
-    const order = (await orderbook.unprocessedOrders()).pop();
-    if (order != undefined) {
-      const etherPrice = await getPrice(
-        "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
-      );
-      const buyTokenPrice = await getPrice(order.buyToken);
-      const sellTokenPrice = await getPrice(order.sellToken);
-      if (
-        buyTokenPrice != null &&
-        sellTokenPrice != null &&
-        etherPrice != null
-      ) {
-        await Promise.all(
-          exchanges.map((exchange) =>
-            exchange.processOrder(
-              order,
-              gasPrice,
-              block_number,
-              etherPrice,
-              buyTokenPrice,
-              sellTokenPrice,
-            )
-          ),
-        );
-      }
-      await parameterStore.store(
-        order,
-        etherPrice,
-        sellTokenPrice,
-        buyTokenPrice,
-        gasPrice,
-        block_number,
-      );
-      await orderbook.mark_as_processed(order);
-    }
+    await deadline(run_loop(), 100_000);
   } catch (err) {
     log.error(`${err}`);
   }
