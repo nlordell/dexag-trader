@@ -3,6 +3,7 @@ run: contracts/Trader.json
 	deno run \
 		--allow-net=api.cow.fi,mainnet.infura.io,api.1inch.io,api.0x.org,apiv5.paraswap.io,ethapi.openocean.finance \
 		--allow-all \
+		--unstable \
 		src/index.js
 
 contracts/%.json: contracts/%.sol

@@ -27,7 +27,7 @@ const dbPool = new Pool(
 );
 
 const provider = new ethers.providers.JsonRpcProvider(
-  `https://mainnet.infura.io/v3/${Deno.env.get("INFURA_PROJECT_ID")}`,
+  `${Deno.env.get("NODE_URL")}`,
 );
 const parameterStore = new ParameterStore(dbPool);
 const orderbook = new Orderbook(dbPool, true);

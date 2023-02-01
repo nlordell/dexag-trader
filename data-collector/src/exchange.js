@@ -61,9 +61,9 @@ export class Exchange {
       };
     }
     const trace_provider = new ethers.providers.JsonRpcProvider(
-      `https://eth-mainnet.gateway.pokt.network/v1/lb/${
+      `${
         Deno.env.get(
-          "POKT_KEY",
+          "NODE_URL",
         )
       }`,
     );
