@@ -17,9 +17,13 @@ const POLL_INTERVAL = 5000; // ms
 
 const POOL_CONNECTIONS = 5;
 await setup_log(log);
-const provider = new ethers.providers.JsonRpcProvider(
-  `${Deno.env.get("NODE_URL")}`,
-);
+const node_config = {
+  url: Deno.env.get("NODE_URL"),
+  password: Deno.env.get("NODE_PASSWORD"),
+  user: Deno.env.get("NODE_USER"),
+  allowInsecureAuthentication: true,
+};
+const provider = new ethers.providers.JsonRpcProvider(node_config);
 
 async function run_loop(orderbook, parameterStore, exchanges, provider) {
   await orderbook.new_orders_update();
@@ -78,6 +82,9 @@ while (true) {
         password: Deno.env.get("POSTGRES_PASSWORD"),
         port: Deno.env.get("POSTGRES_PORT"),
         user: Deno.env.get("POSTGRES_USER"),
+        tls: {
+          enabled: false,
+        },
         lazy: true,
       },
       POOL_CONNECTIONS,
