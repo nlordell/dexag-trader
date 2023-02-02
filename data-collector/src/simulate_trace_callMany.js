@@ -33,7 +33,6 @@ export async function calculate_output_via_trace_callMany(
       ]),
       block_number,
     ];
-
     const res = await provider.send("trace_callMany", callParams);
     const swapTx = res[res.length - 1];
     return {

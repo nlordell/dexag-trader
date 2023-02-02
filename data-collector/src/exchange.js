@@ -79,12 +79,12 @@ export class Exchange {
         swap,
         block_number,
       );
-    const gasCost = gasUsed == null ? null : (gasUsed * gasPrice) / ethPrice;
+    const gasCostTraderContract = gasUsed == null ? null : (gasUsed * gasPrice) / ethPrice;
     const gasCostTraceCall = estimation_result == null
       ? null
       : (parseInt(estimation_result.gas, 10) * gasPrice) / ethPrice;
     log.debug(
-      "gas costs from trader contract for tx on " + this.name + ": " + gasCost,
+      "gas costs from trader contract for tx on " + this.name + ": " + gasCostTraderContract,
     );
     log.debug(
       "gas costs from trace_call simulation on " +
@@ -101,8 +101,8 @@ export class Exchange {
       executedBuyAmount,
       exchange: swap.exchange,
       data: swap.data,
-      gasCost,
-      gasCostTraceCall,
+      feeUsdFromTraderContract: gasCostTraderContract,
+      feeUsdFromTrace: gasCostTraceCall,
       is_reverted: gasUsed == 0 ? true : false,
     };
   }
