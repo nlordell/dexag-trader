@@ -15,33 +15,18 @@ import { deadline } from "https://deno.land/std/async/mod.ts";
 
 const POLL_INTERVAL = 5000; // ms
 
-const POOL_CONNECTIONS = 20;
-const dbPool = new Pool(
-  {
-    database: Deno.env.get("POSTGRES_DB"),
-    hostname: Deno.env.get("POSTGRES_HOST"),
-    password: Deno.env.get("POSTGRES_PASSWORD"),
-    port: Deno.env.get("POSTGRES_PORT"),
-    user: Deno.env.get("POSTGRES_USER"),
-  },
-  POOL_CONNECTIONS,
-);
-
+const POOL_CONNECTIONS = 5;
+await setup_log(log);
 const provider = new ethers.providers.JsonRpcProvider(
   `${Deno.env.get("NODE_URL")}`,
 );
-const parameterStore = new ParameterStore(dbPool);
-const orderbook = new Orderbook(dbPool, true);
-await setup_log(log);
-const exchanges = generateExchangeConfig(dbPool, provider).filter((exchange) =>
-  ["zeroex", "ocean", "oneinch", "paraswap", "cowswap"].includes(exchange.name)
-);
-async function run_loop() {
+
+async function run_loop(orderbook, parameterStore, exchanges, provider) {
   await orderbook.new_orders_update();
-  log.debug("starting run for one order");
   const block_number = await getLatestBlockNumber(provider);
   const gasPrice = await getGasPrice();
   const order = (await orderbook.unprocessedOrders()).pop();
+  log.debug("Starting to process order:" + order.uid);
   if (order != undefined) {
     const etherPrice = await getPrice(
       "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
@@ -53,18 +38,25 @@ async function run_loop() {
       sellTokenPrice != null &&
       etherPrice != null
     ) {
-      await Promise.all(
-        exchanges.map((exchange) =>
-          exchange.processOrder(
-            order,
-            gasPrice,
-            block_number,
-            etherPrice,
-            buyTokenPrice,
-            sellTokenPrice,
-          )
-        ),
-      );
+      try {
+        await deadline(
+          Promise.all(
+            exchanges.map((exchange) =>
+              exchange.processOrder(
+                order,
+                gasPrice,
+                block_number,
+                etherPrice,
+                buyTokenPrice,
+                sellTokenPrice,
+              )
+            ),
+          ),
+          10_000,
+        );
+      } catch (err) {
+        log.error(`Error while quering all exchanges ${err}`);
+      }
     }
     await parameterStore.store(
       order,
@@ -79,11 +71,36 @@ async function run_loop() {
 }
 while (true) {
   try {
-    await deadline(run_loop(), 100_000);
+    const dbPool = new Pool(
+      {
+        database: Deno.env.get("POSTGRES_DB"),
+        hostname: Deno.env.get("POSTGRES_HOST"),
+        password: Deno.env.get("POSTGRES_PASSWORD"),
+        port: Deno.env.get("POSTGRES_PORT"),
+        user: Deno.env.get("POSTGRES_USER"),
+        lazy: true,
+      },
+      POOL_CONNECTIONS,
+    );
+    const parameterStore = new ParameterStore(dbPool);
+    const orderbook = new Orderbook(dbPool, true);
+    const exchanges = generateExchangeConfig(dbPool, provider).filter((
+      exchange,
+    ) =>
+      ["zeroex", "ocean", "oneinch", "paraswap", "cowswap"].includes(
+        exchange.name,
+      )
+    );
+    log.debug("starting run for one order");
+    await deadline(
+      run_loop(orderbook, parameterStore, exchanges, provider),
+      20_000,
+    );
+    log.debug("finished run; sleeping...");
+    await dbPool.end();
   } catch (err) {
-    log.error(`${err}`);
+    log.error(`Error during run loop: ${err}`);
   }
 
-  log.debug("finished run; sleeping...");
   await delay(POLL_INTERVAL);
 }

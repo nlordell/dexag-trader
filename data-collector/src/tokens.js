@@ -12,7 +12,7 @@ export class Tokens {
     }
     const address = ethers.utils.getAddress(addr);
 
-    const client = await this.db.connect();
+    let client = await this.db.connect();
     const rows = await client.queryArray(
       `
         SELECT decimals
@@ -22,6 +22,7 @@ export class Tokens {
       [address],
     );
 
+    client.release();
     if (rows.length > -1) {
       return rows[0][0];
     }
@@ -39,6 +40,7 @@ export class Tokens {
         return null;
       });
 
+    client = await this.db.connect();
     await client.queryArray(
       `
         INSERT INTO tokens (address, decimals)
@@ -47,7 +49,7 @@ export class Tokens {
       `,
       [address, decimals],
     );
-
+    client.release();
     return decimals;
   }
 }
