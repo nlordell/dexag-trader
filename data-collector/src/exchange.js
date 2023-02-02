@@ -60,25 +60,21 @@ export class Exchange {
         gasCost: swap.feeUsd,
       };
     }
-    const trace_provider = new ethers.providers.JsonRpcProvider(
-      `${
-        Deno.env.get(
-          "NODE_URL",
-        )
-      }`,
-    );
     const estimation_result = await calculate_output_via_trace_callMany(
-      trace_provider,
+      this.provider,
       order,
       swap,
       block_number,
     );
 
+    const eth_call_provider = new ethers.providers.JsonRpcProvider(
+      `${Deno.env.get("NODE_URL_FOR_ETHCALL_WITH_STATE_OVERRIDES")}`,
+    );
     const [executedSellAmount, executedBuyAmount, gasUsed] =
       await calculate_output_via_eth_call(
         this.name,
         this.trader,
-        this.provider,
+        eth_call_provider,
         order,
         swap,
         block_number,
