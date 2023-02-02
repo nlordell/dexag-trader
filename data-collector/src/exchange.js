@@ -107,25 +107,32 @@ export class Exchange {
     };
   }
 
-  async storeTrade(trade, outPutValueInDollar, feeUsd) {
+  async storeTrade(
+    trade,
+    outPutValueInDollar,
+    feeUsdFromTraderContract,
+    feeUsdFromTrace,
+  ) {
     const client = await this.db.connect();
     await client.queryArray(
       `
-        INSERT INTO ${this.name}
-          (uid, sell_amount, buy_amount, executed_sell_amount, executed_buy_amount, exchange, data, gas_cost_usd, output_value_usd)
+        INSERT INTO exchange
+          (uid, name, sell_amount, buy_amount, executed_sell_amount, executed_buy_amount, exchange, data, gas_cost_usd_from_trader_contract, gas_cost_usd_from_trace_callMany, output_value_usd)
         VALUES
-          ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        ON CONFLICT (uid) DO NOTHING
+          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        ON CONFLICT (uid, name) DO NOTHING
       `,
       [
         trade.uid,
+        this.name,
         trade.sellAmount.toString(),
         trade.buyAmount.toString(),
         trade.executedSellAmount.toString(),
         trade.executedBuyAmount.toString(),
         trade.exchange,
         trade.data,
-        feeUsd,
+        feeUsdFromTraderContract,
+        feeUsdFromTrace,
         outPutValueInDollar,
       ],
     );
@@ -147,7 +154,6 @@ export class Exchange {
       sellTokenPrice,
     );
     if (swap != null) {
-      const feeUsd = swap.feeUsd;
       const trade = await this.simulateTrade(
         order,
         swap,
@@ -159,9 +165,15 @@ export class Exchange {
       if (this.name == "cowswap") {
         outPutValue = trade.buyAmount / buyTokenPrice;
       } else {
-        outPutValue = trade.executedBuyAmount / buyTokenPrice - feeUsd;
+        outPutValue = trade.executedBuyAmount / buyTokenPrice -
+          trade.feeUsdFromTrace;
       }
-      await this.storeTrade(trade, outPutValue, feeUsd);
+      await this.storeTrade(
+        trade,
+        outPutValue,
+        trade.feeUsdFromTraderContract,
+        trade.feeUsdFromTrace,
+      );
       log.debug(`${this.name} processed ${order.uid}`);
     }
   }

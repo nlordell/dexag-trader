@@ -10,7 +10,7 @@ bang_for_buck_query = """raw_data_filtered as (
       select uid, count(*) as number_of_results from raw_data_filtered group by uid
       ),
       ranked_by_ouput as(
-      select rf.uid, output_value_usd, name, gas_cost_usd, gas_price,
+      select rf.uid, output_value_usd, name, gas_cost_usd_from_trace_callMany, gas_price,
        rank() over( partition by rf.uid order by output_value_usd DESC ) as rank
        from raw_data_filtered rf left join result_count rc on rc.uid = rf.uid where rc.number_of_results > 2
       ),
